@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mój CRM — proste zarządzanie klientami</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#172033;--muted:#697386;--line:#e7ebf2;--blue:#315efb;--blue2:#edf1ff;--green:#14845b;--red:#c24141}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:#fff;border-bottom:1px solid var(--line);padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;position:sticky;top:0;z-index:2}
+.brand{font-size:20px;font-weight:750}.brand span{color:var(--blue)}.sub{color:var(--muted);font-size:13px}
+.wrap{max-width:1180px;margin:26px auto;padding:0 18px}.welcome{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}
+h1{font-size:25px;margin:0 0 4px}h2{font-size:17px;margin:0 0 14px}
+button{border:0;border-radius:10px;padding:10px 14px;background:var(--blue);color:#fff;font-weight:650;cursor:pointer}button.secondary{background:var(--blue2);color:var(--blue)}button.ghost{background:#f2f4f8;color:var(--ink)}button.danger{background:#fff0f0;color:var(--red)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}.stat,.panel{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:18px}.stat b{display:block;font-size:27px;margin-top:5px}.muted{color:var(--muted);font-size:13px}
+.layout{display:grid;grid-template-columns:1.35fr .85fr;gap:16px}.panel{margin-bottom:16px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}input,textarea,select{width:100%;padding:10px 11px;border:1px solid #dce2ec;border-radius:9px;font:inherit;background:#fff;color:var(--ink)}textarea{min-height:75px;resize:vertical}.toolbar input{max-width:300px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;color:var(--muted);font-weight:650}td{font-size:14px}.pill{display:inline-block;padding:4px 8px;border-radius:20px;background:#edf1ff;color:#3455c8;font-size:12px}
+.task{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}.task:last-child{border:0}.task input{width:auto;margin-top:4px}.task.done .taskname{text-decoration:line-through;color:#8992a2}
+form{display:grid;gap:10px}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}
+.empty{padding:20px;text-align:center;color:var(--muted)}.notice{background:#fff8e8;border:1px solid #f3dfad;color:#73551a;padding:12px 14px;border-radius:12px;margin-bottom:16px;font-size:13px}
+footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
+@media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}header{padding:14px}.welcome{align-items:flex-start;flex-direction:column}}
+@media(max-width:480px){.formgrid{grid-template-columns:1fr}.stats{gap:8px}.stat{padding:13px}.stat b{font-size:22px}table{font-size:12px}th,td{padding:8px 5px}}
+</style></head>
+<body>
+<header><div><div class="brand">Mój <span>CRM</span></div><div class="sub">Prosto ogarniaj klientów i sprawy</div></div><button onclick="openContact()">＋ Dodaj klienta</button></header>
+<main class="wrap">
+<div class="welcome"><div><h1>Dzień dobry!</h1><div class="sub">Oto najważniejsze informacje o Twojej firmie.</div></div><div class="sub" id="today"></div></div>
+<div class="notice"><b>Wersja testowa:</b> dane zapisują się tylko w tej przeglądarce na tym urządzeniu. Nie wpisuj danych wrażliwych ani poufnych. Ta wersja nie ma logowania ani wspólnej bazy danych.</div>
+<section class="stats">
+<div class="stat"><span class="muted">Wszyscy klienci</span><b id="countContacts">0</b></div>
+<div class="stat"><span class="muted">Do kontaktu</span><b id="countTasks">0</b></div>
+<div class="stat"><span class="muted">Nowi w tym miesiącu</span><b id="countNew">0</b></div>
+<div class="stat"><span class="muted">Zadania zaległe</span><b id="countLate">0</b></div>
+</section>
+<div class="layout">
+<div>
+<section class="panel"><h2>Klienci</h2><div class="toolbar"><input id="search" placeholder="Szukaj klienta..." oninput="renderContacts()"><button class="secondary" onclick="openContact()">＋ Dodaj</button></div>
+<div style="overflow:auto"><table><thead><tr><th>Klient</th><th>Kontakt</th><th>Notatka</th><th></th></tr></thead><tbody id="contacts"></tbody></table></div><div id="emptyContacts" class="empty" hidden>Nie masz jeszcze klientów. Dodaj pierwszego klienta.</div></section>
+<section class="panel"><h2>Ostatnie wskazówki</h2><p class="muted">Dodawaj klientów po rozmowie, zapisuj krótkie notatki i twórz przypomnienia, żeby nie zapomnieć o kolejnym kontakcie.</p></section>
+</div>
+<div>
+<section class="panel"><h2>Przypomnienia</h2><form id="taskForm"><div class="field"><label>Co trzeba zrobić?</label><input id="taskText" required placeholder="Np. Zadzwonić z ofertą"></div><div class="formgrid"><div class="field"><label>Termin</label><input id="taskDate" type="date" required></div><div class="field"><label>Klient (opcjonalnie)</label><select id="taskContact"><option value="">Bez przypisania</option></select></div></div><button type="submit">Dodaj przypomnienie</button></form><div id="tasks" style="margin-top:12px"></div></section>
+<section class="panel"><h2>Co dalej?</h2><p class="muted">Kolejne moduły — zapytania, sprzedaż i automatyzacje — można rozbudować po przetestowaniu podstawowej wersji.</p></section>
+</div></div>
+</main><footer>Mój CRM · Prosta wersja demonstracyjna</footer>
+<dialog id="contactDialog" style="border:0;border-radius:16px;padding:22px;width:min(480px,calc(100% - 24px));box-shadow:0 20px 60px #18223a33">
+<h2>Dodaj klienta</h2><form id="contactForm"><div class="field"><label>Imię i nazwisko *</label><input id="cName" required placeholder="Np. Jan Kowalski"></div><div class="formgrid"><div class="field"><label>Telefon</label><input id="cPhone" type="tel" placeholder="Telefon"></div><div class="field"><label>E-mail</label><input id="cEmail" type="email" placeholder="E-mail"></div></div><div class="field"><label>Firma (opcjonalnie)</label><input id="cCompany" placeholder="Nazwa firmy"></div><div class="field"><label>Notatka</label><textarea id="cNote" placeholder="O czym warto pamiętać?"></textarea></div><div class="toolbar" style="justify-content:flex-end;margin:0"><button type="button" class="ghost" onclick="closeContact()">Anuluj</button><button type="submit">Zapisz klienta</button></div></form></dialog>
+<script>
+const KEY='moj-crm-v1';
+let data=JSON.parse(localStorage.getItem(KEY)||'{"contacts":[],"tasks":[]}');
+const $=id=>document.getElementById(id);
+const save=()=>{localStorage.setItem(KEY,JSON.stringify(data));render()};
+const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function openContact(){$('contactDialog').showModal()}function closeContact(){$('contactDialog').close()}
+function renderContacts(){
+ const q=$('search').value.toLowerCase();const list=data.contacts.filter(c=>(c.name+' '+c.phone+' '+c.email+' '+c.company).toLowerCase().includes(q));
+ $('contacts').innerHTML=list.map(c=>\`<tr><td><b>\${esc(c.name)}</b>\${c.company?\`<div class="muted">\${esc(c.company)}</div>\`:''}</td><td>\${c.phone?\`<div>\${esc(c.phone)}</div>\`:''}\${c.email?\`<div>\${esc(c.email)}</div>\`:''}</td><td>\${esc(c.note||'—')}</td><td><button class="danger" onclick="removeContact('\${c.id}')">Usuń</button></td></tr>\`).join('');
+ $('emptyContacts').hidden=list.length>0;
+}
+function removeContact(id){if(confirm('Usunąć tego klienta?')){data.contacts=data.contacts.filter(c=>c.id!==id);data.tasks=data.tasks.filter(t=>t.contactId!==id);save()}}
+function renderTasks(){
+ $('tasks').innerHTML=data.tasks.length?data.tasks.sort((a,b)=>a.date.localeCompare(b.date)).map(t=>\`<div class="task \${t.done?'done':''}"><input type="checkbox" \${t.done?'checked':''} onchange="toggleTask('\${t.id}')"><div style="flex:1"><div class="taskname"><b>\${esc(t.text)}</b></div><div class="muted">\${esc(t.date)}\${t.contactId?' · '+esc(data.contacts.find(c=>c.id===t.contactId)?.name||''):''}</div></div><button class="ghost" onclick="removeTask('\${t.id}')">×</button></div>\`).join(''):'<div class="empty">Brak przypomnień. Dodaj pierwsze zadanie powyżej.</div>';
+}
+function render(){
+ renderContacts();renderTasks();$('countContacts').textContent=data.contacts.length;
+ const open=data.tasks.filter(t=>!t.done);$('countTasks').textContent=open.length;
+ const now=new Date(),month=now.getMonth(),year=now.getFullYear();
+ $('countNew').textContent=data.contacts.filter(c=>{const d=new Date(c.created);return d.getMonth()===month&&d.getFullYear()===year}).length;
+ $('countLate').textContent=open.filter(t=>t.date<now.toISOString().slice(0,10)).length;
+ $('taskContact').innerHTML='<option value="">Bez przypisania</option>'+data.contacts.map(c=>\`<option value="\${c.id}">\${esc(c.name)}</option>\`).join('');
+}
+function toggleTask(id){const t=data.tasks.find(x=>x.id===id);if(t){t.done=!t.done;save()}}
+function removeTask(id){data.tasks=data.tasks.filter(t=>t.id!==id);save()}
+$('contactForm').addEventListener('submit',e=>{e.preventDefault();data.contacts.push({id:crypto.randomUUID(),name:$('cName').value.trim(),phone:$('cPhone').value.trim(),email:$('cEmail').value.trim(),company:$('cCompany').value.trim(),note:$('cNote').value.trim(),created:new Date().toISOString()});e.target.reset();closeContact();save()});
+$('taskForm').addEventListener('submit',e=>{e.preventDefault();data.tasks.push({id:crypto.randomUUID(),text:$('taskText').value.trim(),date:$('taskDate').value,contactId:$('taskContact').value,done:false});e.target.reset();$('taskDate').value=new Date().toISOString().slice(0,10);save()});
+$('today').textContent=new Intl.DateTimeFormat('pl-PL',{dateStyle:'full'}).format(new Date());
+$('taskDate').value=new Date().toISOString().slice(0,10);render();
+</script></body></html>
